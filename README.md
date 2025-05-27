@@ -68,3 +68,4 @@ npm run dev
 - Change default credentials in production
 - Use HTTPS in production environments
 - Consider firewall rules to restrict access
+

@@ -1,0 +1,51 @@
+services:
+  squid-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.squid
+    environment:
+      - PROXY_USER=${PROXY_USER:-admin}
+      - PROXY_PASS=${PROXY_PASS:-password}
+    volumes:
+      - squid_cache:/var/spool/squid
+      - squid_logs:/var/log/squid
+    restart: unless-stopped
+    container_name: squid-proxy
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.proxy.rule=Host(`${PROXY_DOMAIN:-proxy.example.com}`)"
+      - "traefik.http.routers.proxy.entrypoints=websecure"
+      - "traefik.http.routers.proxy.tls.certresolver=letsencrypt"
+      - "traefik.http.services.proxy.loadbalancer.server.port=3128"
+      - "traefik.http.middlewares.proxy-auth.basicauth.users=${PROXY_BASIC_AUTH}"
+
+  pac-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - PORT=3128
+      - PROXY_USER=${PROXY_USER:-admin}
+      - PROXY_PASS=${PROXY_PASS:-password}
+      - SERVER_HOST=${PROXY_DOMAIN:-proxy.example.com}
+      - PROXY_PORT=443
+    restart: unless-stopped
+    container_name: pac-server
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pac.rule=Host(`${PROXY_DOMAIN:-proxy.example.com}`) && Path(`/proxy.pac`)"
+      - "traefik.http.routers.pac.entrypoints=websecure"
+      - "traefik.http.routers.pac.tls.certresolver=letsencrypt"
+      - "traefik.http.services.pac.loadbalancer.server.port=3128"
+
+volumes:
+  squid_cache:
+  squid_logs:
+
+networks:
+  traefik:
+    external: true

@@ -5,31 +5,55 @@ RUN apt-get update && apt-get install -y \
     squid \
     apache2-utils \
     curl \
+    gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
 # Create directories
 RUN mkdir -p /var/log/squid /var/spool/squid /var/run /etc/squid
 
-# Copy configuration
-COPY squid/squid.conf /etc/squid/squid.conf
-
-# Create password file with environment variables
+# Define build arguments for all environment variables
 ARG PROXY_USER=admin
 ARG PROXY_PASS=password
+ARG PORT=3128
+ARG SERVER_HOST=localhost
+ARG PROXY_PORT=3128
+
+# Copy configuration template
+COPY squid/squid.conf /etc/squid/squid.conf.template
+
+# Create password file with environment variables
 RUN htpasswd -bc /etc/squid/passwd "${PROXY_USER}" "${PROXY_PASS}"
 
 # Set permissions
 RUN chown -R proxy:proxy /var/log/squid /var/spool/squid /var/run
 RUN chmod 755 /var/spool/squid /var/run
 
-# Initialize cache directories
-RUN squid -z -N
+# Create startup script
+RUN echo '#!/bin/bash\n\
+# Substitute environment variables in squid configuration\n\
+envsubst < /etc/squid/squid.conf.template > /etc/squid/squid.conf\n\
+\n\
+# Initialize cache directories if not already done\n\
+if [ ! -d "/var/spool/squid/00" ]; then\n\
+    squid -z -N\n\
+fi\n\
+\n\
+# Start squid\n\
+exec squid -N -d 1' > /usr/local/bin/start-squid.sh && \
+    chmod +x /usr/local/bin/start-squid.sh
 
-# Health check
+# Health check using build args
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f --proxy http://admin:password@localhost:3128 http://httpbin.org/ip || exit 1
+    CMD curl -f --proxy http://"${PROXY_USER}":"${PROXY_PASS}"@localhost:${PORT} http://httpbin.org/ip || exit 1
 
-EXPOSE 3128
+EXPOSE ${PORT}
 
-# Run as root to avoid permission issues
-CMD ["squid", "-N", "-d", "1"]
+# Set environment variables for runtime
+ENV PROXY_USER=${PROXY_USER}
+ENV PROXY_PASS=${PROXY_PASS}
+ENV PORT=${PORT}
+ENV SERVER_HOST=${SERVER_HOST}
+ENV PROXY_PORT=${PROXY_PORT}
+
+# Run startup script
+CMD ["/usr/local/bin/start-squid.sh"]

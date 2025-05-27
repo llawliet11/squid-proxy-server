@@ -6,13 +6,18 @@ services:
       args:
         - PROXY_USER=${PROXY_USER:-admin}
         - PROXY_PASS=${PROXY_PASS:-password}
+        - PORT=${PORT:-3128}
+        - SERVER_HOST=${SERVER_HOST:-localhost}
+        - PROXY_PORT=${PROXY_PORT:-3128}
     # Uncomment this you want to expose port to host
     ports:
-      - "3128:3128"
+      - "${PORT:-3128}:${PORT:-3128}"
     environment:
       - PROXY_USER=${PROXY_USER:-admin}
       - PROXY_PASS=${PROXY_PASS:-password}
       - PORT=${PORT:-3128}
+      - SERVER_HOST=${SERVER_HOST:-localhost}
+      - PROXY_PORT=${PROXY_PORT:-3128}
     volumes:
       - squid_cache:/var/spool/squid
       - squid_logs:/var/log/squid
@@ -27,7 +32,7 @@ services:
       dockerfile: Dockerfile
     # Uncomment this you want to expose port to host
     ports:
-      - "8080:3128"
+      - "8080:${PORT:-3128}"
     environment:
       - PORT=${PORT:-3128}
       - PROXY_USER=${PROXY_USER:-admin}

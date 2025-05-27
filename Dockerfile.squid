@@ -13,8 +13,10 @@ RUN mkdir -p /var/log/squid /var/spool/squid /var/run /etc/squid
 # Copy configuration
 COPY squid/squid.conf /etc/squid/squid.conf
 
-# Create password file with default credentials
-RUN htpasswd -bc /etc/squid/passwd admin password
+# Create password file with environment variables
+ARG PROXY_USER=admin
+ARG PROXY_PASS=password
+RUN htpasswd -bc /etc/squid/passwd "${PROXY_USER}" "${PROXY_PASS}"
 
 # Set permissions
 RUN chown -R proxy:proxy /var/log/squid /var/spool/squid /var/run

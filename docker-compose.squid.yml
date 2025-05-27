@@ -3,12 +3,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.squid
+      args:
+        - PROXY_USER=${PROXY_USER:-admin}
+        - PROXY_PASS=${PROXY_PASS:-password}
     # Uncomment this you want to expose port to host
-    # ports:
-    #   - "3128:3128"
+    ports:
+      - "3128:3128"
     environment:
       - PROXY_USER=${PROXY_USER:-admin}
       - PROXY_PASS=${PROXY_PASS:-password}
+      - PORT=${PORT:-3128}
     volumes:
       - squid_cache:/var/spool/squid
       - squid_logs:/var/log/squid
@@ -22,8 +26,8 @@ services:
       context: .
       dockerfile: Dockerfile
     # Uncomment this you want to expose port to host
-    # ports:
-    #   - "8080:3128"
+    ports:
+      - "8080:3128"
     environment:
       - PORT=${PORT:-3128}
       - PROXY_USER=${PROXY_USER:-admin}

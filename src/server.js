@@ -24,9 +24,10 @@ function authenticate(req, res, next) {
 }
 
 app.get('/proxy.pac', (req, res) => {
-  const pacContent = `
-function FindProxyForURL(url, host) {
-    return "PROXY ${SERVER_HOST}:${PORT}";
+  const proxyPort = process.env.PROXY_PORT || 3128;
+  const pacContent = `function FindProxyForURL(url, host) {
+    // Use HTTPS proxy for all traffic
+    return "PROXY ${SERVER_HOST}:${proxyPort}";
 }`;
   
   res.set({

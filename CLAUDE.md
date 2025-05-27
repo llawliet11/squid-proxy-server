@@ -4,46 +4,73 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
+### Node.js Express Server (HTTP only)
 - `npm install` - Install dependencies
 - `npm start` - Run the proxy server
 - `npm run dev` - Run with nodemon for development
 - `npm run lint` - Run ESLint
 - `npm test` - Run tests with Jest
 
-## Docker Commands
-
-- `docker-compose up -d` - Start the proxy server in detached mode
-- `docker-compose logs -f` - View logs
-- `docker-compose down` - Stop the server
-- `docker build -t proxy-server .` - Build Docker image manually
+### Squid Proxy Server (Production HTTPS)
+- `docker-compose -f docker-compose.squid.yml up -d` - Start production Squid proxy
+- `docker-compose -f docker-compose.squid.yml logs -f` - View Squid logs
+- `docker-compose -f docker-compose.squid.yml down` - Stop Squid proxy
+- `./scripts/test-proxy.sh` - Test proxy functionality
+- `./scripts/update-auth.sh [user] [password]` - Update proxy credentials
 
 ## Architecture
 
-This is a Node.js HTTP proxy server built with Express.js that provides:
+This repository contains two proxy implementations:
 
-### Core Components
+### 1. Node.js HTTP Proxy (Development/Basic Use)
+- **File**: `src/server.js`
+- **Purpose**: Basic HTTP proxy for development and simple use cases
+- **Limitations**: HTTP only, no HTTPS CONNECT support
+- **Port**: 3128
 
-- **src/server.js** - Main application entry point containing:
-  - Express server setup with CORS and JSON middleware
-  - Basic Authentication middleware for proxy access
-  - PAC file generation endpoint at `/proxy.pac`
-  - Health check endpoint at `/health`
-  - Proxy middleware using `http-proxy-middleware`
+### 2. Squid HTTPS Proxy (Production)
+- **File**: `squid/squid.conf` 
+- **Purpose**: Production-grade HTTP/HTTPS proxy with full SSL support
+- **Features**: CONNECT tunneling, authentication, caching, logging
+- **Ports**: 3128 (proxy), 8080 (PAC server)
 
-### Key Features
+### Production Architecture
+```
+Internet → [Reverse Proxy + SSL] → [Squid Container:3128] → Target Servers
+                                → [PAC Server:8080]
+```
 
-- **Authentication**: Uses Basic Auth with configurable username/password via environment variables
-- **PAC File Support**: Generates proxy auto-configuration files for easy mobile device setup
-- **Docker Ready**: Includes Dockerfile and docker-compose.yml for containerized deployment
-- **Environment Configuration**: All settings configurable via environment variables
+### Key Components
 
-### Proxy Behavior
+#### Squid Configuration (`squid/squid.conf`)
+- HTTP and HTTPS (CONNECT) proxy support
+- Basic authentication via `/etc/squid/passwd`
+- Access control lists for security
+- Caching and logging configuration
+- DNS and performance optimization
 
-- Main proxy endpoint: `/proxy/*` (requires authentication)
-- Supports HTTP proxying with URL rewriting
-- Logs all proxy requests for monitoring
-- Handles proxy errors gracefully
+#### Docker Setup
+- **Dockerfile.squid**: Ubuntu-based Squid container
+- **docker-compose.squid.yml**: Multi-service setup with Squid + PAC server
+- **scripts/**: Utility scripts for testing and authentication management
 
 ### Mobile Device Integration
 
-The `/proxy.pac` endpoint generates a PAC file that can be used to automatically configure proxy settings on Android and iOS devices without manual proxy configuration.
+Both implementations provide PAC (Proxy Auto-Configuration) files:
+- Node.js version: `http://localhost:3128/proxy.pac`
+- Squid version: `http://localhost:8080/proxy.pac`
+
+### Security Features
+
+- Basic Authentication required for all proxy requests
+- Access control lists restrict unsafe ports and methods
+- Configurable via environment variables
+- Support for reverse proxy SSL termination
+
+### Deployment Strategy
+
+The Squid implementation is designed for production deployment where:
+1. Container exposes port 3128 to host
+2. Reverse proxy (nginx/traefik) handles SSL termination
+3. Domain points to VPS with proper certificates
+4. Mobile devices use PAC file for automatic configuration

@@ -1,0 +1,33 @@
+FROM ubuntu:22.04
+
+# Install squid and tools
+RUN apt-get update && apt-get install -y \
+    squid \
+    apache2-utils \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create directories
+RUN mkdir -p /var/log/squid /var/spool/squid /var/run /etc/squid
+
+# Copy configuration
+COPY squid/squid.conf /etc/squid/squid.conf
+
+# Create password file with default credentials
+RUN htpasswd -bc /etc/squid/passwd admin password
+
+# Set permissions
+RUN chown -R proxy:proxy /var/log/squid /var/spool/squid /var/run
+RUN chmod 755 /var/spool/squid /var/run
+
+# Initialize cache directories
+RUN squid -z -N
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f --proxy http://admin:password@localhost:3128 http://httpbin.org/ip || exit 1
+
+EXPOSE 3128
+
+# Run as root to avoid permission issues
+CMD ["squid", "-N", "-d", "1"]

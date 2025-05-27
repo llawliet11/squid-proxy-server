@@ -1,0 +1,42 @@
+services:
+  squid-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.squid
+    ports:
+      - "3128:3128"
+    environment:
+      - PROXY_USER=${PROXY_USER:-admin}
+      - PROXY_PASS=${PROXY_PASS:-password}
+    volumes:
+      - squid_cache:/var/spool/squid
+      - squid_logs:/var/log/squid
+    restart: unless-stopped
+    container_name: squid-proxy
+    networks:
+      - proxy-network
+
+  pac-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:3128"
+    environment:
+      - PORT=3128
+      - PROXY_USER=${PROXY_USER:-admin}
+      - PROXY_PASS=${PROXY_PASS:-password}
+      - SERVER_HOST=${SERVER_HOST:-localhost}
+      - PROXY_PORT=3128
+    restart: unless-stopped
+    container_name: pac-server
+    networks:
+      - proxy-network
+
+volumes:
+  squid_cache:
+  squid_logs:
+
+networks:
+  proxy-network:
+    driver: bridge

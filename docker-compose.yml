@@ -1,0 +1,12 @@
+services:
+  proxy-server:
+    build: .
+    ports:
+      - "3128:3128"
+    environment:
+      - PORT=3128
+      - PROXY_USER=${PROXY_USER:-admin}
+      - PROXY_PASS=${PROXY_PASS:-password}
+      - SERVER_HOST=${SERVER_HOST:-localhost}
+    restart: unless-stopped
+    container_name: http-proxy-server

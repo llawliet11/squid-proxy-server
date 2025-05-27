@@ -18,7 +18,7 @@ services:
       - "traefik.http.routers.proxy.rule=Host(`${PROXY_DOMAIN:-proxy.example.com}`)"
       - "traefik.http.routers.proxy.entrypoints=websecure"
       - "traefik.http.routers.proxy.tls.certresolver=letsencrypt"
-      - "traefik.http.services.proxy.loadbalancer.server.port=3128"
+      - "traefik.http.services.proxy.loadbalancer.server.port=${PORT:-3128}"
       - "traefik.http.middlewares.proxy-auth.basicauth.users=${PROXY_BASIC_AUTH}"
 
   pac-server:
@@ -40,7 +40,7 @@ services:
       - "traefik.http.routers.pac.rule=Host(`${PROXY_DOMAIN:-proxy.example.com}`) && Path(`/proxy.pac`)"
       - "traefik.http.routers.pac.entrypoints=websecure"
       - "traefik.http.routers.pac.tls.certresolver=letsencrypt"
-      - "traefik.http.services.pac.loadbalancer.server.port=3128"
+      - "traefik.http.services.pac.loadbalancer.server.port=${PORT:-3128}"
 
 volumes:
   squid_cache:

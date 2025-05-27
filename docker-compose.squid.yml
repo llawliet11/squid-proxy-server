@@ -30,7 +30,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:${PORT:-3128}"
+      - "18080:${PORT:-3128}"
     environment:
       - PORT=${PORT:-3128}
       - PROXY_USER=${PROXY_USER:-admin}
